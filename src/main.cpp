@@ -65,3 +65,109 @@ ImageType::Pointer CreateCicleImage(double cx, double cy, double radius)
 
     return image;
 }
+
+int main()
+{
+    // Create images
+    auto fixedImage  = CreateCircleImage(50.0, 50.0, 15.0);
+    auto movingImage = CreateCircleImage(200.0, 200.0, 30.0);
+
+    // Transform 
+    using TransformType = itk::Similarity2DTransform<double>;
+    auto transform = TransformType::New();
+    transform->SetIdentity();  // <-- key difference
+
+    // Metric
+    using MetricType = itk::MeanSquaresImageToImageMetricv4<ImageType, ImageType>;
+    auto metric = MetricType::New();
+
+    // Optimizer
+    using OptimizerType = itk::RegularStepGradientDescentOptimizerv4<double>;
+    auto optimizer = OptimizerType::New();
+
+    optimizer->SetLearningRate(4.0);          
+    optimizer->SetMinimumStepLength(1e-4);
+    optimizer->SetNumberOfIterations(300);   
+
+    // Interpolator
+    using InterpolatorType = itk::LinearInterpolateImageFunction<ImageType, double>;
+    auto interpolator = InterpolatorType::New();
+
+    // Registration
+    using RegistrationType = itk::ImageRegistrationMethodv4<ImageType, ImageType>;
+    auto registration = RegistrationType::New();
+
+    registration->SetFixedImage(fixedImage);
+    registration->SetMovingImage(movingImage);
+    registration->SetMetric(metric);
+    registration->SetOptimizer(optimizer);
+    registration->SetInitialTransform(transform);
+    registration->InPlaceOn();
+
+    // Multi-resolution setup
+    RegistrationType::ShrinkFactorsArrayType shrinkFactorsPerLevel;
+    shrinkFactorsPerLevel.SetSize(3);
+    shrinkFactorsPerLevel[0] = 4;
+    shrinkFactorsPerLevel[1] = 2;
+    shrinkFactorsPerLevel[2] = 1;
+
+    RegistrationType::SmoothingSigmasArrayType smoothingSigmasPerLevel;
+    smoothingSigmasPerLevel.SetSize(3);
+    smoothingSigmasPerLevel[0] = 2;
+    smoothingSigmasPerLevel[1] = 1;
+    smoothingSigmasPerLevel[2] = 0;
+
+    registration->SetNumberOfLevels(3);
+    registration->SetShrinkFactorsPerLevel(shrinkFactorsPerLevel);
+    registration->SetSmoothingSigmasPerLevel(smoothingSigmasPerLevel);
+
+    try
+    {
+        registration->Update();
+    }
+    catch (itk::ExceptionObject & err)
+    {
+        std::cerr << "Error: " << err << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    auto finalTransform = registration->GetTransform();
+
+    std::cout << "Final parameters: "
+              << finalTransform->GetParameters() << std::endl;
+
+    // Resample
+    using ResampleType = itk::ResampleImageFilter<ImageType, ImageType>;
+    auto resampler = ResampleType::New();
+
+    resampler->SetInput(movingImage);
+    resampler->SetTransform(finalTransform);
+    resampler->SetReferenceImage(fixedImage);
+    resampler->UseReferenceImageOn();
+    resampler->SetInterpolator(interpolator);
+
+    resampler->Update();
+
+
+    // Write images for viewing
+    using WriterType = itk::ImageFileWriter<ImageType>;
+
+    auto w1 = WriterType::New();
+    w1->SetFileName("fixed.mha");
+    w1->SetInput(fixedImage);
+    w1->Update();
+
+    auto w2 = WriterType::New();
+    w2->SetFileName("moving.mha");
+    w2->SetInput(movingImage);
+    w2->Update();
+
+    auto w3 = WriterType::New();
+    w3->SetFileName("registered.mha");
+    w3->SetInput(resampler->GetOutput());
+    w3->Update();
+
+    std::cout << "Done!" << std::endl;
+
+    return EXIT_SUCCESS;
+}
