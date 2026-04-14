@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     optimizer->SetMinimumStepLength(1e-4);
     optimizer->SetNumberOfIterations(200);
 
-    // --- THE FIX: EXPLICIT MANUAL SCALES ---
+
     // Similarity2D Params: [0: Scale, 1: Angle, 2: TransX, 3: TransY]
     // We scale the angle and scale parameters highly so they don't "blow up" 
     // compared to translation which operates in larger millimeter units.
@@ -88,7 +88,6 @@ int main(int argc, char *argv[])
     optimizerScales[2] = 1.0;    // Translation X
     optimizerScales[3] = 1.0;    // Translation Y
     optimizer->SetScales(optimizerScales);
-    // ---------------------------------------
 
     registration->SetOptimizer(optimizer);
     registration->SetMetric(metric);
