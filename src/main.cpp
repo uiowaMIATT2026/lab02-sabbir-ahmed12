@@ -1,6 +1,6 @@
 #include "itkImage.h"
 #include "itkImageRegionIterator.h"
-#include "itkSimilarity2DTransform.h"
+#include "itkSimilarityTransform.h"
 #include "itkRegularStepGradientDescentOptimizerv4.h"
 #include "itkMeanSquaresImageToImageMetricv4.h"
 #include "itkImageRegistrationMethodv4.h"
