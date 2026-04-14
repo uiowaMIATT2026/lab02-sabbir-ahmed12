@@ -7,3 +7,7 @@
 - For synthetic image, mean squared error is sufficent to achieve good registration.
 
 - For interpolator, linear interpolator is used as it is fast and sufficient for synthetic image like circle.
+
+- Double data type has been chosen for higher stability and precision.
+
+- For better optimization to avoid local minima, multi-resolution registration strategy was adopted.
