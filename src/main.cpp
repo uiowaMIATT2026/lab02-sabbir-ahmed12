@@ -17,11 +17,11 @@ using ImageType = itk::Image<PixelType, Dimension>;
 
 
 // Create a circle 
-ImageType::Pointer CreateCicleImage(double cx, double cy, double radius) 
+ImageType::Pointer CreateCircleImage(double cx, double cy, double radius) 
 {
     ImageType::Pointer image = ImageType::New();
 
-    ImageType:SizeType size;
+    ImageType::SizeType size;
     size[0] = 256;
     size[1] = 256;
 
