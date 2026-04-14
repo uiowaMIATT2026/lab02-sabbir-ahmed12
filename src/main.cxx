@@ -11,7 +11,7 @@
 
 int main(int argc, char *argv[])
 {
-    // 1. REGISTER THE PNG FACTORY
+    // REGISTER THE PNG FACTORY
     itk::PNGImageIOFactory::RegisterOneFactory();
 
     constexpr unsigned int Dimension = 2;
@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     using OptimizerType = itk::RegularStepGradientDescentOptimizerv4<double>;
     using RegistrationType = itk::ImageRegistrationMethodv4<ImageType, ImageType>;
 
-    // 2. READ IMAGES
+    // READ IMAGES
     auto fixedReader = ReaderType::New();
     auto movingReader = ReaderType::New();
     
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     auto fixedImage = fixedReader->GetOutput();
     auto movingImage = movingReader->GetOutput();
 
-    // 3. ENFORCE PHYSICAL SPACING
+    // ENFORCE PHYSICAL SPACING
     ImageType::SpacingType spacing;
     spacing.Fill(1.0);
     fixedImage->SetSpacing(spacing);
@@ -53,13 +53,13 @@ int main(int argc, char *argv[])
     fixedImage->SetOrigin(origin);
     movingImage->SetOrigin(origin);
 
-    // 4. INSTANTIATE PIPELINE
+    // INSTANTIATE PIPELINE
     auto transform = TransformType::New();
     auto metric = MetricType::New();
     auto optimizer = OptimizerType::New();
     auto registration = RegistrationType::New();
 
-    // 5. INITIALIZATION (Aligns Centers of Mass)
+    // INITIALIZATION (Aligns Centers of Mass)
     using InitializerType = itk::CenteredTransformInitializer<TransformType, ImageType, ImageType>;
     auto initializer = InitializerType::New();
     
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
     initializer->MomentsOn(); 
     initializer->InitializeTransform();
 
-    // 6. CONFIGURE OPTIMIZER
+    // CONFIGURE OPTIMIZER
     optimizer->SetLearningRate(1.0); 
     optimizer->SetMinimumStepLength(1e-4);
     optimizer->SetNumberOfIterations(200);
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     registration->SetSmoothingSigmasPerLevel(smoothingSigmasPerLevel);
     registration->SmoothingSigmasAreSpecifiedInPhysicalUnitsOn();
 
-    // 7. EXECUTE
+    // EXECUTE
     try {
         std::cout << "Starting Registration..." << std::endl;
         registration->Update();
@@ -121,12 +121,37 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    // 8. OUTPUT RESULTS
+    // OUTPUT RESULTS
     std::cout << "Registration Complete!" << std::endl;
     std::cout << "Scale:         " << transform->GetScale() << std::endl;
     std::cout << "Translation X: " << transform->GetTranslation()[0] << std::endl;
     std::cout << "Translation Y: " << transform->GetTranslation()[1] << std::endl;
     std::cout << "Stop Condition: " << optimizer->GetStopConditionDescription() << std::endl;
 
-    return EXIT_SUCCESS;
+    // RESAMPLE AND SAVE THE REGISTERED IMAGE
+    using ResampleFilterType = itk::ResampleImageFilter<ImageType, ImageType>;
+    auto resampler = ResampleFilterType::New();
+    
+    resampler->SetInput(movingImage);       // The image we want to move
+    resampler->SetTransform(transform);     // The optimized math we just calculated
+    
+    // We want the output image to have the exact same dimensions, spacing, 
+    // and physical origin as the target (fixed) image.
+    resampler->UseReferenceImageOn();
+    resampler->SetReferenceImage(fixedImage);
+    resampler->SetDefaultPixelValue(0);     // Fill empty space with black
+
+    using WriterType = itk::ImageFileWriter<ImageType>;
+    auto writer = WriterType::New();
+    writer->SetFileName("registered_output.png");
+    writer->SetInput(resampler->GetOutput());
+
+    try {
+        std::cout << "Saving registered image..." << std::endl;
+        writer->Update();
+        std::cout << "Successfully saved to: registered_output.png" << std::endl;
+    } catch (itk::ExceptionObject & err) {
+        std::cerr << "Error writing registered image: " << err << std::endl;
+        return EXIT_FAILURE;
+    }
 }
