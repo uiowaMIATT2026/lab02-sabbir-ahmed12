@@ -141,7 +141,6 @@ int main(int argc, char *argv[])
     resampler->SetReferenceImage(fixedImage);
     resampler->SetDefaultPixelValue(0);     
 
-    // B. Cast the float image to unsigned char (8-bit) for PNG saving
     using OutputPixelType = unsigned char;
     using OutputImageType = itk::Image<OutputPixelType, Dimension>;
     using CastFilterType = itk::CastImageFilter<ImageType, OutputImageType>;
@@ -149,7 +148,6 @@ int main(int argc, char *argv[])
     auto caster = CastFilterType::New();
     caster->SetInput(resampler->GetOutput());
 
-    // C. Write the 8-bit image to disk
     using WriterType = itk::ImageFileWriter<OutputImageType>;
     auto writer = WriterType::New();
     writer->SetFileName("registered_output.png");
