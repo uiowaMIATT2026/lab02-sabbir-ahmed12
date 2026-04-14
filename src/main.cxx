@@ -8,6 +8,7 @@
 #include "itkPNGImageIOFactory.h"
 #include "itkResampleImageFilter.h"
 #include "itkImageFileWriter.h"
+#include "itkCastImageFilter.h"
 
 #include <iostream>
 
@@ -134,19 +135,25 @@ int main(int argc, char *argv[])
     using ResampleFilterType = itk::ResampleImageFilter<ImageType, ImageType>;
     auto resampler = ResampleFilterType::New();
     
-    resampler->SetInput(movingImage);       // The image we want to move
-    resampler->SetTransform(transform);     // The optimized math we just calculated
-    
-    // We want the output image to have the exact same dimensions, spacing, 
-    // and physical origin as the target (fixed) image.
+    resampler->SetInput(movingImage);       
+    resampler->SetTransform(transform);     
     resampler->UseReferenceImageOn();
     resampler->SetReferenceImage(fixedImage);
-    resampler->SetDefaultPixelValue(0);     // Fill empty space with black
+    resampler->SetDefaultPixelValue(0);     
 
-    using WriterType = itk::ImageFileWriter<ImageType>;
+    // B. Cast the float image to unsigned char (8-bit) for PNG saving
+    using OutputPixelType = unsigned char;
+    using OutputImageType = itk::Image<OutputPixelType, Dimension>;
+    using CastFilterType = itk::CastImageFilter<ImageType, OutputImageType>;
+    
+    auto caster = CastFilterType::New();
+    caster->SetInput(resampler->GetOutput());
+
+    // C. Write the 8-bit image to disk
+    using WriterType = itk::ImageFileWriter<OutputImageType>;
     auto writer = WriterType::New();
     writer->SetFileName("registered_output.png");
-    writer->SetInput(resampler->GetOutput());
+    writer->SetInput(caster->GetOutput());
 
     try {
         std::cout << "Saving registered image..." << std::endl;
