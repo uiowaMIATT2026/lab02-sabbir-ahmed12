@@ -4,7 +4,6 @@ project(RegisterCircles)
 
 # Find ITK
 find_package(ITK REQUIRED)
-include(${ITK_USE_FILE})
 
 # Add subdirectory
 add_subdirectory(src)
