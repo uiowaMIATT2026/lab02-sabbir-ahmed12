@@ -9,7 +9,6 @@
 #include "itkImageFileWriter.h"
 
 #include <iostream>
-#include <cmath>
 
 constexpr unsigned int Dimension = 2;
 using PixelType = float;
@@ -37,11 +36,13 @@ ImageType::Pointer CreateCircleImage(double cx, double cy, double radius)
     image->FillBuffer(0.0);
 
     ImageType::SpacingType spacing;
-    spacing.Fill(1.0);
+    spacing[0] = 1.0;
+    spacing[1] = 1.0;
     image->SetSpacing(spacing);
 
     ImageType::PointType origin;
-    origin.Fill(0.0);
+    origin[0] = 0.0;
+    origin[1] = 0.0;
     image->SetOrigin(origin);
 
     itk::ImageRegionIterator<ImageType> it(image, region);
