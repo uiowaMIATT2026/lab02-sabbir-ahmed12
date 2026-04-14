@@ -6,6 +6,8 @@
 #include "itkImageRegistrationMethodv4.h"
 #include "itkCenteredTransformInitializer.h"
 #include "itkPNGImageIOFactory.h"
+#include "itkResampleImageFilter.h"
+#include "itkImageFileWriter.h"
 
 #include <iostream>
 
